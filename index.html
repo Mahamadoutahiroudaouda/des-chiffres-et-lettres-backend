@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Des Chiffres & Des Lettres 🎯</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Poppins:wght@400;600&display=swap');
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      color: #e6e6e6;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+    .card-glass {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    .btn-primary {
+      background: linear-gradient(45deg, #f9c74f, #f8961e);
+      color: #1a1a2e;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(249, 199, 79, 0.3);
+    }
+    .btn-submit {
+      background: linear-gradient(45deg, #2a9d8f, #264653);
+      color: white;
+    }
+    .btn-submit:hover {
+      background: #2a9d8f;
+    }
+    .timer-active {
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    .success-animation {
+      animation: pop 0.6s ease forwards;
+    }
+    @keyframes pop {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .error-animation {
+      animation: shake 0.5s ease;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+    .word-suggestion {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 12px;
+      border-radius: 8px;
+      margin: 2px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body class="text-white">
+
+<div id="app" class="flex flex-col h-screen">
+  <!-- Écran d'accueil -->
+  <div id="home" class="flex flex-col items-center justify-center flex-1 p-6 text-center">
+    <h1 class="text-5xl font-orbitron font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500">
+      🔢 & 🔤
+    </h1>
+    <h2 class="text-4xl font-bold mb-6">Des Chiffres et des Lettres</h2>
+    <p class="text-lg mb-8 max-w-md opacity-90">Jouez en ligne avec vos amis !<br>40 minutes par épreuve, classement en temps réel 🏆</p>
+    <input 
+      type="text" 
+      id="playerName" 
+      placeholder="Entrez votre nom" 
+      class="w-full max-w-xs p-3 rounded-lg text-gray-800 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+      maxlength="20"
+    />
+    <button id="startGame" class="btn-primary px-8 py-3 rounded-full text-xl shadow-lg">
+      🎮 Commencer
+    </button>
+  </div>
+
+  <!-- Jeu -->
+  <div id="game" class="hidden flex-col h-full">
+    <!-- En-tête -->
+    <header class="p-4 bg-black bg-opacity-30 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <span id="currentPlayer" class="font-bold"></span>
+        <span id="currentRound" class="text-sm bg-yellow-500 text-black px-2 py-1 rounded-full"></span>
+      </div>
+      <div class="text-center">
+        <div id="timer" class="text-2xl font-orbitron timer-active">40:00</div>
+        <div id="phase" class="text-sm opacity-80">Épreuve de chiffres</div>
+      </div>
+      <div class="text-right">
+        <div id="progress" class="text-sm">Coup <span id="currentStep">1</span>/10</div>
+      </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <main class="flex-1 p-6 flex flex-col items-center justify-center">
+      <div id="roundInfo" class="mb-6 text-center">
+        <div id="difficulty" class="text-lg font-semibold mb-2"></div>
+        <div id="targetDisplay" class="text-2xl font-orbitron font-bold mb-4"></div>
+        <div id="numbersDisplay" class="text-2xl mb-4 hidden"></div>
+        <div id="lettersDisplay" class="text-2xl mb-4 hidden flex flex-wrap gap-2 justify-center"></div>
+      </div>
+
+      <!-- Zone de réponse -->
+      <div id="answerSection" class="w-full max-w-md mb-6">
+        <textarea 
+          id="answerInput"
+          placeholder="Votre réponse ici..."
+          class="w-full p-4 rounded-lg bg-white bg-opacity-10 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none h-24"
+        ></textarea>
+      </div>
+
+      <!-- Feedback -->
+      <div id="feedback" class="mb-6 h-8 text-center font-semibold"></div>
+
+      <!-- Contrôles -->
+      <div class="flex gap-4">
+        <button id="prevBtn" class="px-6 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition">
+          ◀ Précédent
+        </button>
+        <button id="nextBtn" class="px-6 py-2 bg-green-600 rounded-lg hover:bg-green-500 transition">
+          Suivant ▶
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Écran de fin -->
+  <div id="endScreen" class="hidden flex-col items-center justify-center flex-1 p-6 text-center">
+    <h2 class="text-4xl font-bold mb-4">🎉 Épreuve terminée !</h2>
+    <p class="text-xl mb-4">Vos réponses ont été envoyées.</p>
+    <div class="bg-yellow-900 text-yellow-100 p-4 rounded-lg max-w-md mb-6">
+      <p class="font-semibold">Code de suivi : <span id="playerCode" class="font-orbitron">...</span></p>
+      <p class="text-sm mt-2">Montrez ce code à l’organisateur pour vérification.</p>
+    </div>
+    <button id="restartBtn" class="btn-primary px-8 py-3 rounded-full">
+      Rejouer
+    </button>
+  </div>
+</div>
+
+<!-- Sons -->
+<audio id="successSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+<audio id="errorSound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-946.mp3"></audio>
+<audio id="tickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-typewriter-soft-click-1126.mp3" preload="auto"></audio>
+
+<script>
+  // Mock API (remplacé par ton serveur plus tard)
+  const API_URL = 'https://des-chiffres.onrender.com'; // ← CHANGEZ CETTE URL
+
+  // Données du jeu
+  const gameData = {
+    playerName: '',
+    currentPhase: 'chiffres',
+    currentStep: 0,
+    timer: 2400,
+    timerInterval: null,
+    rounds: {
+      chiffres: [],
+      lettres: []
+    },
+    answers: {
+      chiffres: Array(10).fill(''),
+      lettres: Array(10).fill('')
+    },
+    results: {
+      chiffres: Array(10).fill(null),
+      lettres: Array(10).fill(null)
+    }
+  };
+
+  // Liste de mots valides (extrait) - en vrai, tu pourrais utiliser un dictionnaire
+  const validWords = new Set([
+    'école', 'élève', 'maison', 'chat', 'chien', 'livre', 'table', 'stylo', 'porte', 'fenêtre',
+    'arbre', 'fleur', 'plante', 'soleil', 'lune', 'étoile', 'ciel', 'mer', 'montagne', 'rivière',
+    'pays', 'ville', 'paysage', 'forêt', 'oiseau', 'poisson', 'insecte', 'animal', 'plage', 'sable',
+    'route', 'voiture', 'train', 'avion', 'vélo', 'moto', 'bateau', 'camion', 'bus', 'métro'
+  ].map(w => w.toLowerCase()));
+
+  // Générateurs
+  const generateChiffresRound = (difficulty) => {
+    const easyTargets = [100, 150, 200, 250, 300];
+    const mediumTargets = [350, 400, 450, 500, 550];
+    const hardTargets = [600, 650, 700, 750, 800, 850, 900, 950, 999];
+    
+    let target;
+    const roll = Math.random();
+
+    if (difficulty === 'facile') {
+      target = easyTargets[Math.floor(Math.random() * easyTargets.length)];
+    } else if (difficulty === 'moyen') {
+      target = mediumTargets[Math.floor(Math.random() * mediumTargets.length)];
+    } else {
+      if (roll < 0.4) {
+        // Impossible ou proche
+        const proximity = Math.floor(Math.random() * 3) + 1;
+        target = hardTargets[Math.floor(Math.random() * hardTargets.length)] + proximity;
+      } else {
+        target = hardTargets[Math.floor(Math.random() * hardTargets.length)];
+      }
+    }
+
+    const small = [1,2,3,4,5,6,7,8,9,10];
+    const large = [25, 50];
+    const numbers = [];
+    const nbLarge = Math.floor(Math.random() * 3);
+
+    for (let i = 0; i < nbLarge; i++) {
+      numbers.push(large[Math.floor(Math.random() * large.length)]);
+    }
+    while (numbers.length < 6) {
+      numbers.push(small[Math.floor(Math.random() * small.length)]);
+    }
+
+    return { target, numbers, difficulty };
+  };
+
+  const generateLettresRound = (difficulty) => {
+    const vowels = 'AEIOU';
+    const consonants = 'BCDFGHJKLMNPQRSTVWXYZ';
+    
+    let nbVowels, nbConsonants;
+    
+    if (difficulty === 'facile') {
+      nbVowels = 5; nbConsonants = 5;
+    } else if (difficulty === 'moyen') {
+      nbVowels = 4; nbConsonants = 6;
+    } else {
+      nbVowels = 3; nbConsonants = 7;
+    }
+    
+    const letters = [];
+    for (let i = 0; i < nbVowels; i++) {
+      letters.push(vowels[Math.floor(Math.random() * vowels.length)]);
+    }
+    for (let i = 0; i < nbConsonants; i++) {
+      letters.push(consonants[Math.floor(Math.random() * consonants.length)]);
+    }
+    
+    return {
+      letters: letters.sort(() => Math.random() - 0.5),
+      difficulty
+    };
+  };
+
+  const initializeGame = () => {
+    const difficulties = [
+      ...Array(3).fill('facile'),
+      ...Array(4).fill('moyen'),
+      ...Array(3).fill('difficile')
+    ].sort(() => Math.random() - 0.5);
+
+    gameData.rounds.chiffres = difficulties.map(diff => generateChiffresRound(diff));
+    gameData.rounds.lettres = difficulties.map(diff => generateLettresRound(diff));
+  };
+
+  const updateDisplay = () => {
+    const round = gameData.currentPhase === 'chiffres' 
+      ? gameData.rounds.chiffres[gameData.currentStep]
+      : gameData.rounds.lettres[gameData.currentStep];
+
+    document.getElementById('currentPlayer').textContent = gameData.playerName;
+    document.getElementById('currentStep').textContent = gameData.currentStep + 1;
+    document.getElementById('phase').textContent = gameData.currentPhase === 'chiffres' 
+      ? 'Épreuve de chiffres 🔢' 
+      : 'Épreuve de lettres 🔤';
+    
+    document.getElementById('difficulty').innerHTML = `🎯 ${round.difficulty.toUpperCase()} ${
+      round.difficulty === 'facile' ? '🟢' : round.difficulty === 'moyen' ? '🟡' : '🔴'
+    }`;
+
+    if (gameData.currentPhase === 'chiffres') {
+      document.getElementById('targetDisplay').textContent = `Objectif : ${round.target}`;
+      document.getElementById('numbersDisplay').textContent = round.numbers.join(' - ');
+      document.getElementById('numbersDisplay').classList.remove('hidden');
+      document.getElementById('lettersDisplay').classList.add('hidden');
+    } else {
+      document.getElementById('targetDisplay').textContent = 'Formez le mot le plus long';
+      document.getElementById('numbersDisplay').classList.add('hidden');
+      const lettersContainer = document.getElementById('lettersDisplay');
+      lettersContainer.innerHTML = '';
+      round.letters.forEach(letter => {
+        const span = document.createElement('span');
+        span.className = 'inline-block bg-blue-500 px-3 py-2 rounded-lg text-2xl font-bold';
+        span.textContent = letter;
+        lettersContainer.appendChild(span);
+      });
+      document.getElementById('lettersDisplay').classList.remove('hidden');
+    }
+
+    document.getElementById('answerInput').value = gameData.answers[gameData.currentPhase][gameData.currentStep] || '';
+    updateNavigation();
+  };
+
+  const updateNavigation = () => {
+    const nextBtn = document.getElementById('nextBtn');
+    if (gameData.currentPhase === 'lettres' && gameData.currentStep === 9) {
+      nextBtn.textContent = '✅ Soumettre';
+    } else {
+      nextBtn.textContent = 'Suivant ▶';
+    }
+  };
+
+  const startTimer = () => {
+    document.getElementById('timer').classList.add('timer-active');
+    gameData.timerInterval = setInterval(() => {
+      gameData.timer--;
+      const minutes = Math.floor(gameData.timer / 60);
+      const seconds = gameData.timer % 60;
+      document.getElementById('timer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      if (gameData.timer <= 0) {
+        submitFinal();
+      }
+    }, 1000);
+  };
+
+  const playSound = (type) => {
+    const sound = document.getElementById(type + 'Sound');
+    sound.currentTime = 0;
+    sound.play().catch(e => console.log('Audio play failed:', e));
+  };
+
+  const submitFinal = () => {
+    clearInterval(gameData.timerInterval);
+    
+    const payload = {
+      playerName: gameData.playerName,
+      chiffres: gameData.answers.chiffres,
+      lettres: gameData.answers.lettres
+    };
+
+    fetch(API_URL + '/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('playerCode').textContent = data.code || 'Inconnu';
+    })
+    .catch(err => {
+      console.error('Erreur envoi:', err);
+      document.getElementById('playerCode').textContent = 'Erreur réseau';
+    });
+
+    document.getElementById('home').classList.add('hidden');
+    document.getElementById('game').classList.add('hidden');
+    document.getElementById('endScreen').classList.remove('hidden');
+  };
+
+  const goToNext = () => {
+    const answer = document.getElementById('answerInput').value.trim();
+    gameData.answers[gameData.currentPhase][gameData.currentStep] = answer;
+
+    if (gameData.currentPhase === 'lettres' && gameData.currentStep === 9) {
+      submitFinal();
+      return;
+    }
+
+    if (gameData.currentStep < 9) {
+      gameData.currentStep++;
+      updateDisplay();
+      document.getElementById('feedback').textContent = '';
+    } else {
+      if (gameData.currentPhase === 'chiffres') {
+        gameData.currentPhase = 'lettres';
+        gameData.currentStep = 0;
+        document.getElementById('feedback').textContent = 'Passage à l\'épreuve des lettres ! 🔤';
+        playSound('success');
+      }
+      updateDisplay();
+    }
+  };
+
+  const goToPrev = () => {
+    const answer = document.getElementById('answerInput').value.trim();
+    gameData.answers[gameData.currentPhase][gameData.currentStep] = answer;
+
+    if (gameData.currentStep > 0) {
+      gameData.currentStep--;
+      updateDisplay();
+      document.getElementById('feedback').textContent = '';
+    } else if (gameData.currentPhase === 'lettres') {
+      gameData.currentPhase = 'chiffres';
+      gameData.currentStep = 9;
+      updateDisplay();
+    }
+  };
+
+  // Événements
+  document.getElementById('startGame').addEventListener('click', () => {
+    const name = document.getElementById('playerName').value.trim();
+    if (!name) {
+      alert('Veuillez entrer votre nom !');
+      return;
+    }
+
+    gameData.playerName = name;
+    initializeGame();
+    
+    document.getElementById('home').classList.add('hidden');
+    document.getElementById('game').classList.remove('hidden');
+    
+    updateDisplay();
+    startTimer();
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', goToNext);
+  document.getElementById('prevBtn').addEventListener('click', goToPrev);
+
+  document.getElementById('answerInput').addEventListener('input', (e) => {
+    gameData.answers[gameData.currentPhase][gameData.currentStep] = e.target.value;
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    location.reload();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('game').classList.contains('hidden')) return;
+    
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      goToNext();
+    } else if (e.key === 'ArrowRight') {
+      goToNext();
+    } else if (e.key === 'ArrowLeft') {
+      goToPrev();
+    }
+  });
+
+  // Sons
+  ['successSound', 'errorSound', 'tickSound'].forEach(id => {
+    const audio = document.getElementById(id);
+    audio.volume = 0.3;
+  });
+</script>
+</body>
+</html>
